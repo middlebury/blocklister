@@ -11,7 +11,9 @@
 /*********************************************************
  * Blacklist database
  *********************************************************/
-$blacklist->setBlacklistDatabase(new PDO('mysql:host=127.0.0.1;dbname=afranco_blacklist', 'testuser', 'testpassword'));
+$blacklist->setBlacklistDatabase(new PDO('sqlite:'.dirname(__FILE__).'/data/blacklist.sq3'));
+# $blacklist->setBlacklistDatabase(new PDO('mysql:host=127.0.0.1;dbname=afranco_blacklist', 'testuser', 'testpassword'));
+
 
 /*********************************************************
  * Add a regular expressions that will match IP ranges

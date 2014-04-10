@@ -39,6 +39,21 @@ class Blacklist {
 	public function setBlacklistDatabase (PDO $destDB) {
 		$this->destDB = $destDB;
 		$this->destDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		
+		// Test if the table exists.
+		try {
+			$this->destDB->query('SELECT * FROM blacklist');
+		} catch (PDOException $e) {
+			$query = "
+CREATE TABLE IF NOT EXISTS blacklist (
+  time_added bigint(20) NOT NULL,
+  ttl int(11) NOT NULL DEFAULT '60',
+  ip varchar(15) NOT NULL,
+  signature varchar(255) NOT NULL,
+  PRIMARY KEY (ip)
+);";
+			$this->destDB->query($query);
+		}
 	}
 	
 	/**
@@ -101,22 +116,18 @@ class Blacklist {
 		}
 		
 		$now = time();
-		$insert = $this->destDB->prepare('INSERT INTO blacklist (time_added, ttl, ip, signature) VALUES (:time_added, :ttl, :ip, :signature);');
+		$insert = $this->destDB->prepare('INSERT INTO blacklist (time_added, ttl, ip, signature) VALUES (:time_added, :ttl, :ip, :signature)');
+		$select = $this->destDB->prepare('SELECT ip FROM blacklist WHERE ip = :ip');
 		foreach ($blacklist as $ip => $info) {
-			try {
+			$select->execute(array(':ip' => $ip));
+			$existing = $select->fetchAll(PDO::FETCH_COLUMN);
+			if (empty($existing)) {
 				$insert->execute(array(
 					':time_added' => $now,
 					':ttl' => $info['blacklistTime'],
 					':ip' => $ip,
 					':signature' => $info['signature'],
 				));
-			} catch (PDOException $e) {
-				if ($e->getCode() == 23000) {
-					// Ignore duplicate-key exceptions -- the ip is already in the database.
-					// MySQL: 23000
-				} else {
-					throw $e;
-				}
 			}
 		}
 	}
@@ -127,8 +138,9 @@ class Blacklist {
 	 * @return array
 	 */
 	public function getList () {
-		$select = $this->destDB->prepare('SELECT ip FROM blacklist WHERE time_added + ttl > :now;');
-		$select->execute(array(':now' => time()));
+		$select = $this->destDB->prepare('SELECT ip FROM blacklist WHERE time_added + ttl > :now');
+		$select->bindValue(':now', time(), PDO::PARAM_INT);
+		$select->execute();
 		return $select->fetchAll(PDO::FETCH_COLUMN);
 	}
 	
@@ -138,9 +150,9 @@ class Blacklist {
 	 * @return null
 	 */
 	protected function _removeExpired () {
-		$now = time();
-		$delete = $this->destDB->prepare('DELETE FROM blacklist WHERE time_added + ttl < :now;');
-		$delete->execute(array(':now' => $now));
+		$delete = $this->destDB->prepare('DELETE FROM blacklist WHERE time_added + ttl < :now');
+		$delete->bindValue(':now', time(), PDO::PARAM_INT);
+		$delete->execute();
 	}
 	
 	/**
