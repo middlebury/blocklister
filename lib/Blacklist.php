@@ -127,10 +127,9 @@ class Blacklist {
 	 * @return array
 	 */
 	public function getList () {
-		// Remove expired entries from the blacklist.
-		$this->_removeExpired();
-		
-		return $this->destDB->query('SELECT ip FROM blacklist')->fetchAll(PDO::FETCH_COLUMN);
+		$select = $this->destDB->prepare('SELECT ip FROM blacklist WHERE time_added + ttl > :now;');
+		$select->execute(array(':now' => time()));
+		return $select->fetchAll(PDO::FETCH_COLUMN);
 	}
 	
 	/**
