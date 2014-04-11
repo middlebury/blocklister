@@ -76,10 +76,10 @@ class ElasticsearchDataSource {
 		
 		// Add an index for each day covered in the search time, will be filtered as unique.
 		$indices = array();
-		$indices[] = $this->index_base.'-'.date('Y.m.d', $to);
-		$indices[] = $this->index_base.'-'.date('Y.m.d', $from);
+		$indices[] = $this->index_base.'-'.gmdate('Y.m.d', $to);
+		$indices[] = $this->index_base.'-'.gmdate('Y.m.d', $from);
 		for ($t = $from + 24 * 3600; $t < $to; $t = $t + 24 * 3600) {
-			$indices[] = $this->index_base.'-'.date('Y.m.d', $t);
+			$indices[] = $this->index_base.'-'.gmdate('Y.m.d', $t);
 		}
 		$indices = array_unique($indices);
 		sort($indices);
