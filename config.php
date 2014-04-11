@@ -44,9 +44,9 @@ $web_es = new ElasticsearchDataSource('http://logs.example.com:9200/', 'logstash
 $signature = new ElasticsearchSignature($web_es);
 $signature->setQuery("cluster:drupal AND type:varnishncsa AND verb:post AND response:403");
 $signature->setWindow('5m');
-$signature->setThreshold(10);
+$signature->setThreshold(15);
 $signature->setIPField('orig_clientip');
-$blacklist->addSignature('POST with 403', $signature, '6h');
+$blacklist->addSignature('POST with 403', $signature, '12h');
 
 // Match form submissions that include a honeypot field.
 //
