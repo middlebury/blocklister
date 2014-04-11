@@ -13,6 +13,10 @@ try {
 	});
 	
 	$blacklist = new Blacklist();
+	
+	if (!file_exists(dirname(__FILE__).'/config.php'))
+		throw new Exception('To complete installation, please copy config.php.example to config.php and edit it to match your environment.', 4);
+	
 	require_once(dirname(__FILE__).'/config.php');
 
 	// Update the blacklist based on matches to the signatures
@@ -24,6 +28,6 @@ try {
 	
 	exit(0);
 } catch (Exception $e) {
-	print 'Error: '.$e->getMessage();
+	print 'Error: '.$e->getMessage()."\n";
 	exit($e->getCode());
 }

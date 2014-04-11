@@ -51,7 +51,9 @@ Installation process
  1. Put the directory containing this README and the scripts (including the `lib/` and
     `data/` directories) somewhere on your machine.
 
- 2. Edit the config.php to choose your database (it defaults to using a Sqlite file stored
+ 2. Copy `config.php.example` to `config.php`.
+
+ 3. Edit `config.php` to choose your database (it defaults to using a Sqlite file stored
     at `data/blacklist.sq3`) and configure where your Elasticsearch datasource lives
     and what behavior signatures it should match.
 
