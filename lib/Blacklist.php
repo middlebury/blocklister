@@ -20,14 +20,16 @@ class Blacklist {
 	protected $destDB;
 	protected $whitelistPatterns = array();
 	protected $signatures = array();
-	
+	protected $verbose = FALSE;
+
 	/**
 	 * Constructor.
 	 *
 	 * @return null
 	 */
-	public function __construct () {
-		
+	public function __construct ($verbose = FALSE) {
+		if ($verbose)
+			$this->verbose = TRUE;
 	}
 	
 	/**
@@ -87,6 +89,8 @@ CREATE TABLE IF NOT EXISTS blacklist (
 			'signature' => $signature,
 			'blacklistTime' => self::getSecondsFromTime($blacklistTime),
 		);
+		if ($this->verbose)
+			$signature->setVerbose(TRUE);
 	}
 
 	/**

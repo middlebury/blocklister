@@ -21,6 +21,7 @@ class ElasticsearchSignature implements Signature {
 	protected $window;
 	protected $threshold;
 	protected $field;
+	protected $verbose = FALSE;
 
 	/**
 	 * Constructor
@@ -30,6 +31,19 @@ class ElasticsearchSignature implements Signature {
 	 */
 	public function __construct (ElasticsearchDataSource $elasticsearch) {
 		$this->elasticsearch = $elasticsearch;
+	}
+	
+	/**
+	 * Set verbose mode.
+	 * 
+	 * @param boolean $verbose
+	 * @return null
+	 */
+	public function setVerbose ($verbose) {
+		if ($verbose)
+			$this->verbose = TRUE;
+		else
+			$this->verbose = FALSE;
 	}
 	
 	/**
@@ -131,6 +145,10 @@ class ElasticsearchSignature implements Signature {
 			"size" => 100000000,  // Hard-coding to 1,000,000 results. This should be big enough.
 		);
 		
+		if ($this->verbose) {
+			$this->elasticsearch->setVerbose(TRUE);
+		}
+		
 		$results = $this->elasticsearch->search($request, $from, $to);
 				
 		// Count the matches.
@@ -147,6 +165,11 @@ class ElasticsearchSignature implements Signature {
 			}
 		}
 		
+		if ($this->verbose) {
+			print "Matching IPs with counts: ";
+			print_r($counts);
+		}
+
 		// Filter to only those meeting the threshold.
 		$matching = array();
 		foreach ($counts as $ip => $count) {

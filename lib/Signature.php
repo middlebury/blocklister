@@ -23,4 +23,12 @@ interface Signature {
 	 */
 	public function getMatchingIPs ();
 	
+	/**
+	 * Set verbose mode.
+	 * 
+	 * @param boolean $verbose
+	 * @return null
+	 */
+	public function setVerbose ($verbose);
+
 }

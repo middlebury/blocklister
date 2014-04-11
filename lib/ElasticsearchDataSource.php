@@ -18,6 +18,7 @@ class ElasticsearchDataSource {
 
 	protected $base_url;
 	protected $index_base;
+	protected $verbose = FALSE;
 
 	/**
 	 * Constructor
@@ -37,6 +38,19 @@ class ElasticsearchDataSource {
 		$this->index_base = $index_base;
 	}
 
+	/**
+	 * Set verbose mode.
+	 * 
+	 * @param boolean $verbose
+	 * @return null
+	 */
+	public function setVerbose ($verbose) {
+		if ($verbose)
+			$this->verbose = TRUE;
+		else
+			$this->verbose = FALSE;
+	}
+	
 	/**
 	 * Perform a search
 	 *
@@ -87,6 +101,9 @@ class ElasticsearchDataSource {
 				$url = $this->base_url.$index.'/_search?pretty';
 				$response = http_parse_message(http_post_data($url, $request_data, $options, $info));
 				$result = json_decode($response->body);
+				if ($this->verbose) {
+					print "Searching $url for \n\t$request_data\n";
+				}
 				if (!empty($result->error) || $info['response_code'] != 200) {
 					if (!empty($result->error))
 						$message = $result->error;
