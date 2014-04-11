@@ -122,6 +122,18 @@ class Blacklist {
 	}
 	
 	/**
+	 * Answer the blacklisted IPs
+	 *
+	 * @return array
+	 */
+	public function getList () {
+		// Remove expired entries from the blacklist.
+		$this->_removeExpired();
+		
+		return $this->destDB->query('SELECT ip FROM blacklist')->fetchAll(PDO::FETCH_COLUMN);
+	}
+	
+	/**
 	 * Removed expired entries from the blacklist.
 	 *
 	 * @return null
