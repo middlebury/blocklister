@@ -26,10 +26,21 @@ $blacklist->addWhitelistPattern('/^172\.16\./');
 
 
 /*********************************************************
+ * Add a static list of IP addresses that will be included
+ * in every list. This is useful to prevent the IPS/firewall
+ * from thinking the list is empty.
+ *********************************************************/
+$static_list_members = array(
+	"192.0.2.0/24",
+);
+
+
+/*********************************************************
  * Configure the Elasticsearch data source that will be 
  * shared by the following signatures.
  *********************************************************/
 $web_es = new ElasticsearchDataSource('http://logs.example.com:9200/', 'logstash');
+
 
 /*********************************************************
  * Signatures to match

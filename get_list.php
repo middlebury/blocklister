@@ -21,6 +21,10 @@ try {
 
 	// Update the blacklist based on matches to the signatures
 	@header('Content-Type: text/plain');
+	if (!empty($static_list_members) && is_array($static_list_members)) {
+		print implode("\n", $static_list_members);
+		print "\n";
+	}
 	$ips = $blacklist->getList();
 	foreach ($ips as $ip) {
 		print $ip."/32\n";
