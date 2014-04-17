@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 					':ip' => $ip,
 					':signature' => $info['signature'],
 				));
+				echo "Client [".$ip."] added to blacklist for ".$this->_formatTime($info['blacklistTime'])." for matching signature [".$info['signature']."]\n";
 			}
 		}
 	}
@@ -149,13 +150,40 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	}
 	
 	/**
+	 * Return a nicely formatted time string given an integer number of seconds.
+	 *
+	 * @param int $seconds
+	 * @return string
+	 */
+	protected function _formatTime ($seconds) {
+		$seconds = intval($seconds);
+		if ($seconds < 120)
+			return $seconds.' seconds';
+		if ($seconds < 3600)
+			return round($seconds / 60).' minutes';
+		if ($seconds < (3600 * 48))
+			return round($seconds / 3600, 1).' hours';
+		
+		return round($seconds / (3600 * 24), 1).' days';
+	}
+	
+	/**
 	 * Removed expired entries from the blacklist.
 	 *
 	 * @return null
 	 */
 	protected function _removeExpired () {
+		$now = time();
+		
+		$select = $this->destDB->prepare('SELECT * FROM blacklist WHERE time_added + ttl < :now');
+		$select->bindValue(':now', $now, PDO::PARAM_INT);
+		$select->execute();
+		foreach ($select->fetchAll(PDO::FETCH_OBJ) as $row) {
+			echo "Client [".$row->ip."] removed from blacklist after ".$this->_formatTime($now - $row->time_added)." for matching signature [".$row->signature."]\n";
+		}
+		
 		$delete = $this->destDB->prepare('DELETE FROM blacklist WHERE time_added + ttl < :now');
-		$delete->bindValue(':now', time(), PDO::PARAM_INT);
+		$delete->bindValue(':now', $now, PDO::PARAM_INT);
 		$delete->execute();
 	}
 	
