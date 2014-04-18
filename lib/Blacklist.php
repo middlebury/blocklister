@@ -21,6 +21,9 @@ class Blacklist {
 	protected $whitelistPatterns = array();
 	protected $signatures = array();
 	protected $verbose = FALSE;
+	protected $alertThreshold = 0;
+	protected $alertEmails = array();
+	protected $alertFromEmail = null;
 
 	/**
 	 * Constructor.
@@ -30,6 +33,10 @@ class Blacklist {
 	public function __construct ($verbose = FALSE) {
 		if ($verbose)
 			$this->verbose = TRUE;
+		
+		// Set up a default From address for any alert emails.
+		$processUser = posix_getpwuid(posix_geteuid());
+		$this->alertFromEmail = $processUser['name'].'@'.gethostname();
 	}
 	
 	/**
@@ -92,6 +99,46 @@ CREATE TABLE IF NOT EXISTS blacklist (
 		if ($this->verbose)
 			$signature->setVerbose(TRUE);
 	}
+	
+	/**
+	 * Set a threshold number of matches to alert on. If more than this number of
+	 * IPs match in an execution, send an alert email. If set to 0, no alerts will be sent.
+	 *
+	 * @param int $threshold
+	 * @return null
+	 */
+	public function setAlertThreshold ($threshold) {
+		if (!is_int($threshold) || $threshold < 0)
+			throw new InvalidArgumentException('$threshold must be an integer greater than or equal to 0.');
+		
+		$this->alertThreshold = $threshold;
+	}
+	
+	/**
+	 * Set the From email address for alert emails
+	 *
+	 * @param string $email
+	 * @return null
+	 */
+	public function setAlertFromEmailAddress ($email) {
+		if (!filter_var($email, FILTER_VALIDATE_EMAIL))
+			throw new InvalidArgumentException('The $email specified doesn\'t look like a valid address.');
+		
+		$this->alertFromEmail = $email;
+	}
+	
+	/**
+	 * Add an email address to receive alerts when the threshold is exceeded.
+	 *
+	 * @param string $email
+	 * @return null
+	 */
+	public function addAlertEmailAddress ($email) {
+		if (!filter_var($email, FILTER_VALIDATE_EMAIL))
+			throw new InvalidArgumentException('The $email specified doesn\'t look like a valid address.');
+		
+		$this->alertEmails[] = $email;
+	}
 
 	/**
 	 * Update the blacklist from signature matches.
@@ -134,6 +181,39 @@ CREATE TABLE IF NOT EXISTS blacklist (
 				));
 				echo "Client [".$ip."] added to blacklist for ".$this->_formatTime($info['blacklistTime'])." for matching signature [".$info['signature']."]\n";
 			}
+		}
+		
+		// Send alerts if needed.
+		if ($this->alertThreshold > 0) {
+			if (!count($this->alertEmails))
+				print "Error: Alert threshold set to ".$this->alertThreshold.", but no alert email addresses are defined.\n";
+			
+			$hostname = gethostname();
+			$subject = "Blacklister alert from ".$hostname.": more than ".$this->alertThreshold." clients matched.";
+			ob_start();
+			print "<html>\n";
+			print "\t<head>\n";
+			print "\t\t<title>".$subject."</title>\n";
+			print "\t</head>\n";
+			print "\t<body>\n";
+			print "\t\t<p>From Blacklister on ".$hostname.":</p>\n";
+			print "\t\t<p>".count($blacklist)." client IPs were matched in this run, exceeding the threshold of ".$this->alertThreshold.".</p>\n\n";
+			print "\t\t<p>Matched clients:</p>\n";
+			print "\t\t<pre style=\"font-family:courier new,monospace\">";
+			foreach ($blacklist as $ip => $info) {
+				print "\t".$ip."\tmatched\t[".$info['signature']."]\n";
+			}
+			print "</pre>\n";
+			print "\t</body>\n";
+			print "</html>\n";
+			$message = ob_get_clean();
+			$additional_headers = array(
+				'From: '.$this->alertFromEmail,
+				'MIME-Version: 1.0',
+				'Content-Type: text/html; charset="iso-8859-1"',
+				'Content-Disposition: inline',
+			);
+			mail(implode(',', $this->alertEmails), $subject, str_replace("\n", "\r\n", $message), implode("\r\n", $additional_headers));
 		}
 	}
 	

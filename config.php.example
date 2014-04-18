@@ -43,6 +43,28 @@ $web_es = new ElasticsearchDataSource('http://logs.example.com:9200/', 'logstash
 
 
 /*********************************************************
+ * Configure a threshold and list of emails to alert on.
+ *
+ * If this number of IPs are matched in a single execution,
+ * an email alert will be sent to administrators (listed)
+ * to notify them.
+ *
+ *    $blacklist->setAlertThreshold(20);
+ *    $blacklist->addAlertEmailAddress('admin@example.edu');
+ * 
+ * You can also set the From address if you need to have it
+ * properly match a valid address. By default it uses the
+ * username executing the script at the current hostname.
+ *
+ *    $blacklist->setAlertFromEmailAddress('user@example.edu');
+ *
+ *********************************************************/
+#$blacklist->setAlertThreshold(20);
+#$blacklist->addAlertEmailAddress('admin@example.edu');
+#$blacklist->addAlertEmailAddress('admin2@example.edu');
+
+
+/*********************************************************
  * Signatures to match
  *********************************************************/
 
