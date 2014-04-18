@@ -197,12 +197,12 @@ CREATE TABLE IF NOT EXISTS blacklist (
 		}
 		
 		// Send alerts if needed.
-		if ($this->alertThreshold > 0) {
+		if ($this->alertThreshold > 0 && count($blacklist) >= $this->alertThreshold) {
 			if (!count($this->alertEmails))
 				print "Error: Alert threshold set to ".$this->alertThreshold.", but no alert email addresses are defined.\n";
 			
 			$hostname = gethostname();
-			$subject = "Blacklister alert from ".$hostname.": more than ".$this->alertThreshold." clients matched.";
+			$subject = "Blacklister alert from ".$hostname.": ".$this->alertThreshold."+ clients matched.";
 			ob_start();
 			print "<html>\n";
 			print "\t<head>\n";
