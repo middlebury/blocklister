@@ -33,10 +33,6 @@ class Blacklist {
 	public function __construct ($verbose = FALSE) {
 		if ($verbose)
 			$this->verbose = TRUE;
-		
-		// Set up a default From address for any alert emails.
-		$processUser = posix_getpwuid(posix_geteuid());
-		$this->alertFromEmail = $processUser['name'].'@'.gethostname();
 	}
 	
 	/**
@@ -220,6 +216,15 @@ CREATE TABLE IF NOT EXISTS blacklist (
 			print "\t</body>\n";
 			print "</html>\n";
 			$message = ob_get_clean();
+			if (empty($this->alertFromEmail)) {
+				// Set up a default From address for any alert emails.
+				if (function_exists('posix_getpwuid') && function_exists('posix_geteuid')) {
+					$processUser = posix_getpwuid(posix_geteuid());
+					$this->alertFromEmail = $processUser['name'].'@'.gethostname();
+				} else {
+					print "Error: POSIX functions posix_getpwuid() and/or posix_geteuid() are not available. Please add POSIX support to PHP http://us3.php.net/manual/en/book.posix.php or use $blacklister->setAlertFromEmailAddress() to set the alert From address.";
+				}
+			}
 			$additional_headers = array(
 				'From: '.$this->alertFromEmail,
 				'MIME-Version: 1.0',
