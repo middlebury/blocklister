@@ -160,8 +160,21 @@ CREATE TABLE IF NOT EXISTS blacklist (
 				echo "Client [".$ip."] matched signature [".$displayName."]\n";
 				// IPs might match multiple signatures, so add IPs to the blacklist with 
 				// the largest time matched.
-				if (!isset($blacklist[$ip]) || (isset($blacklist[$ip]) && $blacklistTime > $blacklist[$ip]['blacklistTime'])) {
-					$blacklist[$ip] = array('blacklistTime' => $blacklistTime, 'signature' => $displayName);
+				if (!isset($blacklist[$ip])) {
+					$blacklist[$ip] = array(
+						'blacklistTime' => $blacklistTime,
+						'signature' => $displayName,
+						'matched_signatures' => array($displayName),
+					);
+				} else {
+					// Add our signature to the list of all matched.
+					$blacklist[$ip]['matched_signatures'][] = $displayName;
+					
+					// Replace the primary signature if this one has a longer block-time
+					if ($blacklistTime > $blacklist[$ip]['blacklistTime']) {
+						$blacklist[$ip]['blacklistTime'] = $blacklistTime;
+						$blacklist[$ip]['signature'] = $displayName;
+					}
 				}
 			}
 		}
@@ -201,7 +214,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 			print "\t\t<p>Matched clients:</p>\n";
 			print "\t\t<pre style=\"font-family:courier new,monospace\">";
 			foreach ($blacklist as $ip => $info) {
-				print "\t".$ip."\tmatched\t[".$info['signature']."]\n";
+				print "\t".$ip."\tmatched\t[".implode('], [', $info['matched_signatures'])."]\n";
 			}
 			print "</pre>\n";
 			print "\t</body>\n";
