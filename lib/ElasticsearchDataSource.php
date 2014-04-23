@@ -92,6 +92,8 @@ class ElasticsearchDataSource {
 		$results = array();
 		$options = array(
 			'useragent' => 'Blacklister',
+			'connecttimeout' => 10,
+			'timeout' => 30,
 		);
 		if (!empty($this->http_auth))
 			$options['httpauth'] = $this->http_auth;
@@ -99,7 +101,18 @@ class ElasticsearchDataSource {
 		foreach ($indices as $index) {
 			try {
 				$url = $this->base_url.$index.'/_search?pretty';
-				$response = http_parse_message(http_post_data($url, $request_data, $options, $info));
+				$message = @http_post_data($url, $request_data, $options, $info);
+				if (empty($message)) {
+					$error = $info['error'];
+					$error .= ' total_time='.$info['total_time'];
+					$error .= ' namelookup_time='.$info['namelookup_time'];
+					$error .= ' connect_time='.$info['connect_time'];
+					$error .= ' pretransfer_time='.$info['pretransfer_time'];
+					$error .= ' num_connects='.$info['num_connects'];
+					$error .= ' os_errno='.$info['os_errno'];
+					throw new Exception('HTTP POST to '.$url.' failed. '.$error);
+				}
+				$response = http_parse_message($message);
 				$result = json_decode($response->body);
 				if ($this->verbose) {
 					print "Searching $url for \n\t$request_data\n";
