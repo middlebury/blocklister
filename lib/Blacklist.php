@@ -34,7 +34,7 @@ class Blacklist {
 		if ($verbose)
 			$this->verbose = TRUE;
 	}
-	
+
 	/**
 	 * Add a destination database.
 	 *
@@ -44,7 +44,7 @@ class Blacklist {
 	public function setBlacklistDatabase (PDO $destDB) {
 		$this->destDB = $destDB;
 		$this->destDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-		
+
 		// Test if the table exists.
 		try {
 			$this->destDB->query('SELECT * FROM blacklist');
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 			$this->destDB->query($query);
 		}
 	}
-	
+
 	/**
 	 * Add a regular expression to match IP ranges that should never be blacklisted.
 	 *
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 			throw new InvalidArgumentException('Invalid regex supplied to addWhitelistPattern(): '.$regex, 1);
 		$this->whitelistPatterns[] = $regex;
 	}
-	
+
 	/**
 	 * Add a signature to match events.
 	 *
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 		if ($this->verbose)
 			$signature->setVerbose(TRUE);
 	}
-	
+
 	/**
 	 * Set a threshold number of matches to alert on. If more than this number of
 	 * IPs match in an execution, send an alert email. If set to 0, no alerts will be sent.
@@ -106,10 +106,10 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	public function setAlertThreshold ($threshold) {
 		if (!is_int($threshold) || $threshold < 0)
 			throw new InvalidArgumentException('$threshold must be an integer greater than or equal to 0.');
-		
+
 		$this->alertThreshold = $threshold;
 	}
-	
+
 	/**
 	 * Set the From email address for alert emails
 	 *
@@ -119,10 +119,10 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	public function setAlertFromEmailAddress ($email) {
 		if (!filter_var($email, FILTER_VALIDATE_EMAIL))
 			throw new InvalidArgumentException('The $email specified doesn\'t look like a valid address.');
-		
+
 		$this->alertFromEmail = $email;
 	}
-	
+
 	/**
 	 * Add an email address to receive alerts when the threshold is exceeded.
 	 *
@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	public function addAlertEmailAddress ($email) {
 		if (!filter_var($email, FILTER_VALIDATE_EMAIL))
 			throw new InvalidArgumentException('The $email specified doesn\'t look like a valid address.');
-		
+
 		$this->alertEmails[] = $email;
 	}
 
@@ -144,9 +144,9 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	public function update () {
 		// Remove expired entries from the blacklist.
 		$this->_removeExpired();
-		
+
 		$blacklist = array(); // Array of [IP => blacklist time].
-		
+
 		foreach ($this->signatures as $signatureArray) {
 			$displayName = $signatureArray['displayName'];
 			$signature = $signatureArray['signature'];
@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 			$ips = $this->_filterWhitelistedIPs($signature->getMatchingIPs(), $displayName);
 			foreach ($ips as $ip) {
 				echo "Client [".$ip."] matched signature [".$displayName."]\n";
-				// IPs might match multiple signatures, so add IPs to the blacklist with 
+				// IPs might match multiple signatures, so add IPs to the blacklist with
 				// the largest time matched.
 				if (!isset($blacklist[$ip])) {
 					$blacklist[$ip] = array(
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 				} else {
 					// Add our signature to the list of all matched.
 					$blacklist[$ip]['matched_signatures'][] = $displayName;
-					
+
 					// Replace the primary signature if this one has a longer block-time
 					if ($blacklistTime > $blacklist[$ip]['blacklistTime']) {
 						$blacklist[$ip]['blacklistTime'] = $blacklistTime;
@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 				}
 			}
 		}
-		
+
 		$now = time();
 		$insert = $this->destDB->prepare('INSERT INTO blacklist (time_added, ttl, ip, signature) VALUES (:time_added, :ttl, :ip, :signature)');
 		$select = $this->destDB->prepare('SELECT ip FROM blacklist WHERE ip = :ip');
@@ -191,12 +191,12 @@ CREATE TABLE IF NOT EXISTS blacklist (
 				echo "Client [".$ip."] added to blacklist for ".$this->_formatTime($info['blacklistTime'])." for matching signature [".$info['signature']."]\n";
 			}
 		}
-		
+
 		// Send alerts if needed.
 		if ($this->alertThreshold > 0 && count($blacklist) >= $this->alertThreshold) {
 			if (!count($this->alertEmails))
 				print "Error: Alert threshold set to ".$this->alertThreshold.", but no alert email addresses are defined.\n";
-			
+
 			$hostname = gethostname();
 			$subject = "Blacklister alert from ".$hostname.": ".$this->alertThreshold."+ clients matched.";
 			ob_start();
@@ -234,7 +234,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 			mail(implode(',', $this->alertEmails), $subject, str_replace("\n", "\r\n", $message), implode("\r\n", $additional_headers));
 		}
 	}
-	
+
 	/**
 	 * Answer the blacklisted IPs
 	 *
@@ -246,7 +246,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 		$select->execute();
 		return $select->fetchAll(PDO::FETCH_COLUMN);
 	}
-	
+
 	/**
 	 * Return a nicely formatted time string given an integer number of seconds.
 	 *
@@ -261,10 +261,10 @@ CREATE TABLE IF NOT EXISTS blacklist (
 			return round($seconds / 60).' minutes';
 		if ($seconds < (3600 * 48))
 			return round($seconds / 3600, 1).' hours';
-		
+
 		return round($seconds / (3600 * 24), 1).' days';
 	}
-	
+
 	/**
 	 * Removed expired entries from the blacklist.
 	 *
@@ -272,19 +272,19 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	 */
 	protected function _removeExpired () {
 		$now = time();
-		
+
 		$select = $this->destDB->prepare('SELECT * FROM blacklist WHERE time_added + ttl < :now');
 		$select->bindValue(':now', $now, PDO::PARAM_INT);
 		$select->execute();
 		foreach ($select->fetchAll(PDO::FETCH_OBJ) as $row) {
 			echo "Client [".$row->ip."] removed from blacklist after ".$this->_formatTime($now - $row->time_added)." for matching signature [".$row->signature."]\n";
 		}
-		
+
 		$delete = $this->destDB->prepare('DELETE FROM blacklist WHERE time_added + ttl < :now');
 		$delete->bindValue(':now', $now, PDO::PARAM_INT);
 		$delete->execute();
 	}
-	
+
 	/**
 	 * Filter out whitelisted IPs
 	 *
@@ -310,8 +310,8 @@ CREATE TABLE IF NOT EXISTS blacklist (
 		}
 		return $filteredIPs;
 	}
-	
-	
+
+
 	/**
 	 * Answer an integer number of seconds given an integer or a time string.
 	 *
@@ -332,7 +332,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 		} else {
 			if (!preg_match('/^\s*([0-9]+)\s*([dhms]?)\s*$/i', $time, $m))
 				throw new InvalidArgumentException('$time must be an integer or a string like these: "5m", "2h", "1d"');
-			
+
 			$multipliers = array(
 				's' => 1,
 				'm' => 60,
@@ -343,7 +343,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 			$unit = strtolower($m[2]);
 			if (!isset($multipliers[$unit]))
 				$unit = 's';
-			
+
 			return intval($m[1]) * $multipliers[$unit];
 		}
 	}

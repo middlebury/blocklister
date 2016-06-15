@@ -24,7 +24,7 @@ class ElasticsearchDataSource {
 	 * Constructor
 	 *
 	 * @param string $base_url
-	 * @param string $index_base 
+	 * @param string $index_base
 	 *	This string will be appended to the base_url as a subdirectory with $index_base
 	 *	followed by '-', followed by the date in YYYY-MM-DD format
 	 * @return null
@@ -40,7 +40,7 @@ class ElasticsearchDataSource {
 
 	/**
 	 * Set verbose mode.
-	 * 
+	 *
 	 * @param boolean $verbose
 	 * @return null
 	 */
@@ -50,7 +50,7 @@ class ElasticsearchDataSource {
 		else
 			$this->verbose = FALSE;
 	}
-	
+
 	/**
 	 * Perform a search
 	 *
@@ -66,14 +66,14 @@ class ElasticsearchDataSource {
 			throw new InvalidArgumentException('A $from timestamp must be specified.');
 		if ($to != 'now' && (!is_int($to) || $to < 0))
 			throw new InvalidArgumentException('A $to timestamp must be specified.');
-		
+
 		if ($to == 'now') {
 			$toString = 'now';
 			$to = time();
 		} else {
 			$toString = null;
 		}
-		
+
 		// Add an index for each day covered in the search time, will be filtered as unique.
 		$indices = array();
 		$indices[] = $this->index_base.'-'.gmdate('Y.m.d', $to);
@@ -83,11 +83,11 @@ class ElasticsearchDataSource {
 		}
 		$indices = array_unique($indices);
 		sort($indices);
-		
+
 		$request_data = json_encode($data);
 		if ($request_data === FALSE)
 			throw new InvalidArgumentException('$data could not be encoded as JSON.');
-				
+
 		// Fetch the results.
 		$results = array();
 		$options = array(
@@ -97,7 +97,7 @@ class ElasticsearchDataSource {
 		);
 		if (!empty($this->http_auth))
 			$options['httpauth'] = $this->http_auth;
-		
+
 		foreach ($indices as $index) {
 			try {
 				$url = $this->base_url.$index.'/_search?pretty';

@@ -30,20 +30,20 @@ if [ -n "$output" ]
 then
 	DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 	$DIR/update_list.php
-	
+
 	if [ ! -f "$output" ]
 	then
 		touch $output
 	fi
-	
+
 	if [ ! -w "$output" ]
 	then
 		echo "Error: Output file $output is not writeable."
 		exit 3
 	fi
-	
+
 	$DIR/get_list.php > $output
-	
+
 else
 	echo "Error: You must specify an output file."
 	echo -e $usage

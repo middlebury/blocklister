@@ -20,7 +20,7 @@ Overview
 ---------
 
 This program is composed of a bash script, `blacklist_cron.sh` that triggers the
-fetching and writes the blacklist output. This script can be run manually or by cron. 
+fetching and writes the blacklist output. This script can be run manually or by cron.
 In turn, the `blacklist_cron.sh` calls two PHP scripts, `update_list.php` and
 `get_list.php` which do the heavy lifting of querying Elasticsearch, filtering the
 results, and writing the blacklist to a working database. This working database can be
@@ -31,14 +31,14 @@ Environment
 ------------
 
  * bash
- 
+
  * cron
- 
+
  * PHP 5.3+  with...
-   
+
    * `PECL HTTP` >= 0.1.0, < 2.0  (for the `http_post_data()` function).  
      http://us.php.net/manual/en/book.http.php
-     
+
    * `PDO_SQLITE` or `PDO_MYSQL` (for working database storage).  
      http://us.php.net/manual/en/ref.pdo-sqlite.php  
      http://us.php.net/manual/en/ref.pdo-mysql.php

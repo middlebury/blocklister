@@ -3,7 +3,7 @@
  * Blacklister configuration. Used by both update_list.php and get_list.php
  *
  * @package blacklister
- * 
+ *
  * @copyright Copyright &copy; 2014, Middlebury College
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
  */
@@ -36,7 +36,7 @@ $static_list_members = array(
 
 
 /*********************************************************
- * Configure the Elasticsearch data source that will be 
+ * Configure the Elasticsearch data source that will be
  * shared by the following signatures.
  *********************************************************/
 $web_es = new ElasticsearchDataSource('http://logs.example.com:9200/', 'logstash');
@@ -51,7 +51,7 @@ $web_es = new ElasticsearchDataSource('http://logs.example.com:9200/', 'logstash
  *
  *    $blacklist->setAlertThreshold(20);
  *    $blacklist->addAlertEmailAddress('admin@example.edu');
- * 
+ *
  * You can also set the From address if you need to have it
  * properly match a valid address. By default it uses the
  * username executing the script at the current hostname.
@@ -70,7 +70,7 @@ $web_es = new ElasticsearchDataSource('http://logs.example.com:9200/', 'logstash
 
 // Match POST requests that result in 403 responses.
 //
-// Real people can get these if they leave a form open 
+// Real people can get these if they leave a form open
 // overnight and their session expires. Let them refresh
 // the page a few times before logging in. If they get
 // more than a few of these, they are *very* likely malicious.

@@ -8,9 +8,9 @@
 
 /**
  * Interface for definition of activity signatures that will be identified for blacklisting.
- * 
+ *
  * @package blacklister
- * 
+ *
  * @copyright Copyright &copy; 2014, Middlebury College
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
  */
@@ -32,10 +32,10 @@ class ElasticsearchSignature implements Signature {
 	public function __construct (ElasticsearchDataSource $elasticsearch) {
 		$this->elasticsearch = $elasticsearch;
 	}
-	
+
 	/**
 	 * Set verbose mode.
-	 * 
+	 *
 	 * @param boolean $verbose
 	 * @return null
 	 */
@@ -45,7 +45,7 @@ class ElasticsearchSignature implements Signature {
 		else
 			$this->verbose = FALSE;
 	}
-	
+
 	/**
 	 * Set the query for this signature to match, for example:
 	 *		cluster:drupal AND type:varnishncsa AND verb:post AND response:403
@@ -60,7 +60,7 @@ class ElasticsearchSignature implements Signature {
 			throw new InvalidArgumentException('$query must be a string.');
 		$this->query = $query;
 	}
-	
+
 	/**
 	 * Set the window of time that should be examined for matching events.
 	 *
@@ -74,7 +74,7 @@ class ElasticsearchSignature implements Signature {
 	public function setWindow ($window) {
 		$this->window = Blacklist::getSecondsFromTime($window);
 	}
-	
+
 	/**
 	 * Set the threshold number of events at which point we should include an IP.
 	 *
@@ -86,7 +86,7 @@ class ElasticsearchSignature implements Signature {
 			throw new InvalidArgumentException('$threshold must be a positive integer.');
 		$this->threshold = $threshold;
 	}
-	
+
 	/**
 	 * Set the IP address field in the Elasticsearch data
 	 *
@@ -101,7 +101,7 @@ class ElasticsearchSignature implements Signature {
 
 	/**
 	 * Answer an array of IP addresses that match this signature.
-	 * 
+	 *
 	 * @return array of strings in the format '127.0.0.1'
 	 */
 	public function getMatchingIPs () {
@@ -113,10 +113,10 @@ class ElasticsearchSignature implements Signature {
 			throw new Exception('Please specify a number-of-events threshold using '.get_class($this).'->setThreshold()');
 		if (empty($this->field))
 			throw new Exception('Please specify a IP address field using '.get_class($this).'->setIPField()');
-		
+
 		$to = time();
 		$from = $to - $this->window;
-		
+
 		$request = array(
 			"query" => array(
 				"filtered" => array(
@@ -144,13 +144,13 @@ class ElasticsearchSignature implements Signature {
 			),
 			"size" => 100000000,  // Hard-coding to 1,000,000 results. This should be big enough.
 		);
-		
+
 		if ($this->verbose) {
 			$this->elasticsearch->setVerbose(TRUE);
 		}
-		
+
 		$results = $this->elasticsearch->search($request, $from, $to);
-				
+
 		// Count the matches.
 		$counts = array();
 		$field = $this->field;
@@ -164,7 +164,7 @@ class ElasticsearchSignature implements Signature {
 				$counts[$ip]++;
 			}
 		}
-		
+
 		if ($this->verbose) {
 			print "Matching IPs with counts: ";
 			print_r($counts);
@@ -178,5 +178,5 @@ class ElasticsearchSignature implements Signature {
 		}
 		return $matching;
 	}
-	
+
 }
