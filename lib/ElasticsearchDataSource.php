@@ -20,6 +20,7 @@ class ElasticsearchDataSource {
 	protected $index_base;
 	protected $verbose = FALSE;
 	protected $index_cache = array();
+	protected $http_auth = NULL;
 
 	/**
 	 * Constructor
@@ -30,13 +31,20 @@ class ElasticsearchDataSource {
 	 *	followed by '-', followed by the date in YYYY-MM-DD format
 	 * @return null
 	 */
-	public function __construct ($base_url, $index_base) {
+	public function __construct ($base_url, $index_base, $username = NULL, $password = NULL) {
 		if (!preg_match('/^https?:\/\/.+\/$/', $base_url))
 			throw new InvalidArgumentException('$base_url must begin with \'http://\' or \'https://\' and end with a \'/\'.');
 		if (!strlen($index_base))
 			throw new InvalidArgumentException('$index_base must be specified, for example \'logstash\'');
 		$this->base_url = $base_url;
 		$this->index_base = $index_base;
+
+		if (!is_null($username)) {
+			$this->http_auth = $username;
+		}
+		if (!is_null($password)) {
+			 $this->http_auth .= ':'.$password;
+		}
 	}
 
 	/**
