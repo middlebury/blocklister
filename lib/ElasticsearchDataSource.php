@@ -172,6 +172,17 @@ class ElasticsearchDataSource {
 					if (!empty($result->error->index)) {
 						$message .= " in index ".$result->error->index;
 					}
+					if (!empty($result->error->root_cause)) {
+						$message .= "; root cause[s]: ";
+						$i = 0;
+						foreach ($result->error->root_cause as $error) {
+							if ($i) {
+								$message .= ", ";
+							}
+							$message .= $error->type.": ".$error->reason;
+							$i++;
+						}
+					}
 				} else {
 					$message = $result->error;
 				}
