@@ -216,17 +216,15 @@ class ElasticsearchDataSource {
 
 		// Fetch the results.
 		$results = array();
-		foreach ($indices as $index) {
-			try {
-				$url = $this->base_url.$index.'/_search?pretty';
-				$result = $this->post($url, $request_data);
-				if (empty($result->hits))
-					throw new Exception('Error decoding JSON response into hits.');
-				$results = array_merge($results, $result->hits->hits);
-			} catch (Exception $e) {
-				// Continue other fetches even if we have a search error.
-				echo "Error: ".$e->getMessage()."\n";
-			}
+		try {
+			$url = $this->base_url.implode(',', $indices).'/_search?pretty';
+			$result = $this->post($url, $request_data);
+			if (empty($result->hits))
+				throw new Exception('Error decoding JSON response into hits.');
+			$results = array_merge($results, $result->hits->hits);
+		} catch (Exception $e) {
+			// Continue other fetches even if we have a search error.
+			echo "Error: ".$e->getMessage()."\n";
 		}
 		return $results;
 	}
