@@ -142,7 +142,7 @@ class ElasticsearchSignature implements Signature {
 					),
 				),
 			),
-			"size" => 100000000,  // Hard-coding to 1,000,000 results. This should be big enough.
+			"size" => 10000,  // Hard-coding to 10,000 results. This is ElasticSearch's max.
 		);
 
 		if ($this->verbose) {
