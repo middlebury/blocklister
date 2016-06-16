@@ -99,22 +99,14 @@ class ElasticsearchDataSource {
 					),
 				),
 			));
-			$message = @http_post_data($url, $request_data, $options, $info);
-			if (empty($message)) {
-				$error = $info['error'];
-				$error .= ' total_time='.$info['total_time'];
-				$error .= ' namelookup_time='.$info['namelookup_time'];
-				$error .= ' connect_time='.$info['connect_time'];
-				$error .= ' pretransfer_time='.$info['pretransfer_time'];
-				$error .= ' num_connects='.$info['num_connects'];
-				$error .= ' os_errno='.$info['os_errno'];
-				throw new Exception('HTTP POST to '.$url.' failed. '.$error);
+			$result = $this->post($url, $request_data);
+			$indices = array();
+			foreach ($result->indices as $index => $info) {
+				$indices[] = $index;
 			}
-			$response = http_parse_message($message);
-			$result = json_decode($response->body, TRUE);
-			$this->index_cache[$from.'-'.$to] = array_keys($result['indices']);
+			$this->index_cache[$from.'-'.$to] = $indices;
 			if ($this->verbose) {
-				print "Search for indices at $url with \n\t$request_data\nfound\n\t".implode(', ', $this->index_cache[$from.'-'.$to])."\n";
+				print "Search for indices at $url with \n\t$request_data\n    found\n\t".implode(', ', $this->index_cache[$from.'-'.$to])."\n";
 			}
 		}
 		return $this->index_cache[$from.'-'.$to];
@@ -137,6 +129,49 @@ class ElasticsearchDataSource {
 			$indices[] = $this->index_base.'-'.gmdate('Y.m.d', $t);
 		}
 		return $indices;
+	}
+
+	protected function post($url, $request_data){
+		$options = array(
+			'useragent' => 'Blacklister',
+			'connecttimeout' => 10,
+			'timeout' => 30,
+		);
+		if (!empty($this->http_auth)) {
+			$options['httpauth'] = $this->http_auth;
+		}
+
+		$message = @http_post_data($url, $request_data, $options, $info);
+		if (empty($message)) {
+			$error = $info['error'];
+			$error .= ' total_time='.$info['total_time'];
+			$error .= ' namelookup_time='.$info['namelookup_time'];
+			$error .= ' connect_time='.$info['connect_time'];
+			$error .= ' pretransfer_time='.$info['pretransfer_time'];
+			$error .= ' num_connects='.$info['num_connects'];
+			$error .= ' os_errno='.$info['os_errno'];
+			throw new Exception('HTTP POST to '.$url.' failed. '.$error);
+		}
+		$response = http_parse_message($message);
+		$result = json_decode($response->body);
+		if ($this->verbose) {
+			print "Searching $url for \n\t$request_data\n";
+		}
+		if (!empty($result->error) || $info['response_code'] != 200) {
+			if (!empty($result->error))
+				if (is_object($result->error)) {
+					$message = $result->error->type.": ".$result->error->reason;
+					if (!empty($result->error->index)) {
+						$message .= " in index ".$result->error->index;
+					}
+				} else {
+					$message = $result->error;
+				}
+			else
+				$message = '';
+			throw new Exception('Search to '.$info['effective_url'].' failed with response_code '.$info['response_code'].'. '.$message);
+		}
+		return $result;
 	}
 
 	/**
@@ -173,47 +208,10 @@ class ElasticsearchDataSource {
 
 		// Fetch the results.
 		$results = array();
-		$options = array(
-			'useragent' => 'Blacklister',
-			'connecttimeout' => 10,
-			'timeout' => 30,
-		);
-		if (!empty($this->http_auth))
-			$options['httpauth'] = $this->http_auth;
-
 		foreach ($indices as $index) {
 			try {
 				$url = $this->base_url.$index.'/_search?pretty';
-				$message = @http_post_data($url, $request_data, $options, $info);
-				if (empty($message)) {
-					$error = $info['error'];
-					$error .= ' total_time='.$info['total_time'];
-					$error .= ' namelookup_time='.$info['namelookup_time'];
-					$error .= ' connect_time='.$info['connect_time'];
-					$error .= ' pretransfer_time='.$info['pretransfer_time'];
-					$error .= ' num_connects='.$info['num_connects'];
-					$error .= ' os_errno='.$info['os_errno'];
-					throw new Exception('HTTP POST to '.$url.' failed. '.$error);
-				}
-				$response = http_parse_message($message);
-				$result = json_decode($response->body);
-				if ($this->verbose) {
-					print "Searching $url for \n\t$request_data\n";
-				}
-				if (!empty($result->error) || $info['response_code'] != 200) {
-					if (!empty($result->error))
-						if (is_object($result->error)) {
-							$message = $result->error->type.": ".$result->error->reason;
-							if (!empty($result->error->index)) {
-								$message .= " in index ".$result->error->index;
-							}
-						} else {
-							$message = $result->error;
-						}
-					else
-						$message = '';
-					throw new Exception('Search to '.$info['effective_url'].' failed with response_code '.$info['response_code'].'. '.$message);
-				}
+				$result = $this->post($url, $request_data);
 				if (empty($result->hits))
 					throw new Exception('Error decoding JSON response into hits.');
 				$results = array_merge($results, $result->hits->hits);
