@@ -141,7 +141,6 @@ class ElasticsearchDataSource {
 
 	protected function post($url, $request_data){
 		$options = array(
-			'useragent' => 'Blacklister',
 			'connecttimeout' => 10,
 			'timeout' => 30,
 		);
@@ -149,23 +148,36 @@ class ElasticsearchDataSource {
 			$options['httpauth'] = $this->http_auth;
 		}
 
-		$message = @http_post_data($url, $request_data, $options, $info);
-		if (empty($message)) {
-			$error = $info['error'];
-			$error .= ' total_time='.$info['total_time'];
-			$error .= ' namelookup_time='.$info['namelookup_time'];
-			$error .= ' connect_time='.$info['connect_time'];
-			$error .= ' pretransfer_time='.$info['pretransfer_time'];
-			$error .= ' num_connects='.$info['num_connects'];
-			$error .= ' os_errno='.$info['os_errno'];
+		$request = new \http\Client\Request('POST', $url);
+		$request->setOptions ($options);
+		$request->setHeaders(array(
+			'User-agent' => 'Blacklister',
+			'Content-Type' => 'text/json',
+		));
+		$request->getBody()->append($request_data);
+
+		$client = (new \http\Client())
+			->enqueue($request)
+			->send();
+		$response = $client->getResponse($request);
+
+		$info = $response->getTransferInfo();
+		if (!empty($info->error)) {
+			var_dump($info);
+			$error = $info->error;
+			$error .= ' total_time='.$info->total_time;
+			$error .= ' namelookup_time='.$info->namelookup_time;
+			$error .= ' connect_time='.$info->connect_time;
+			$error .= ' pretransfer_time='.$info->pretransfer_time;
+			$error .= ' num_connects='.$info->num_connects;
+			$error .= ' os_errno='.$info->os_errno;
 			throw new Exception('HTTP POST to '.$url.' failed. '.$error);
 		}
-		$response = http_parse_message($message);
-		$result = json_decode($response->body);
+		$result = json_decode($response->getBody());
 		if ($this->verbose) {
 			print "Searching $url for \n\t$request_data\n";
 		}
-		if (!empty($result->error) || $info['response_code'] != 200) {
+		if (!empty($result->error) || $info->response_code != 200) {
 			if (!empty($result->error))
 				if (is_object($result->error)) {
 					$message = $result->error->type.": ".$result->error->reason;
@@ -188,7 +200,7 @@ class ElasticsearchDataSource {
 				}
 			else
 				$message = '';
-			throw new Exception('Search to '.$info['effective_url'].' failed with response_code '.$info['response_code'].'. '.$message);
+			throw new Exception('Search to '.$info->effective_url.' failed with response_code '.$info->response_code.'. '.$message);
 		}
 		return $result;
 	}
