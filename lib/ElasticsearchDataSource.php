@@ -146,6 +146,7 @@ class ElasticsearchDataSource {
 		);
 		if (!empty($this->http_auth)) {
 			$options['httpauth'] = $this->http_auth;
+			$options['httpauthtype'] = \http\Client\Curl\AUTH_BASIC;
 		}
 
 		$request = new \http\Client\Request('POST', $url);
