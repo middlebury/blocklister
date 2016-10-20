@@ -36,8 +36,8 @@ Environment
 
  * PHP 5.3+  with...
 
-   * `PECL HTTP` >= 0.1.0, < 2.0  (for the `http_post_data()` function).  
-     http://us.php.net/manual/en/book.http.php
+   * `PECL HTTP` 2.0+
+     https://pecl.php.net/package/pecl_http
 
    * `PDO_SQLITE` or `PDO_MYSQL` (for working database storage).  
      http://us.php.net/manual/en/ref.pdo-sqlite.php  
