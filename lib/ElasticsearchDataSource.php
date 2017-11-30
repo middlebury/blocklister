@@ -72,52 +72,12 @@ class ElasticsearchDataSource {
 		// This is the method used by Kibana > 4.1.
 		// https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-field-stats.html
 		if (strpos($this->index_base, '*') !== FALSE) {
-			return $this->getIndicesBySearch($from, $to);
+			return [$this->index_base];
 		}
 		// Make assumptions about the naming scheme of indices.
 		else {
 			return $this->getIndicesByPattern($from, $to);
 		}
-	}
-
-	/**
-	 * Answer an array of indices in which to search.
-	 *
-	 * Use the field-stats API to search for indices if we have a wild-card.
-	 * This is the method used by Kibana > 4.1.
-	 * https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-field-stats.html
-	 *
-	 * @param int $from Timestamp to begin searching at.
-	 * @param mixed $to Timestamp to end searching at or 'now'.
-	 * @return array
-	 */
-	protected function getIndicesBySearch($from, $to) {
-		if (!isset($this->index_cache[$from.'-'.$to])) {
-			$url = $this->base_url.$this->index_base.'/_field_stats?level=indices&pretty=true';
-			$request_data = json_encode(array(
-				'fields' => array('@timestamp'),
-				'index_constraints' => array(
-					'@timestamp' => array(
-						"max_value" => array(
-							"gte" => date('c', $from),
-						),
-						"min_value" => array(
-							"lte" => date('c', $to),
-						),
-					),
-				),
-			));
-			$result = $this->post($url, $request_data);
-			$indices = array();
-			foreach ($result->indices as $index => $info) {
-				$indices[] = $index;
-			}
-			$this->index_cache[$from.'-'.$to] = $indices;
-			if ($this->verbose) {
-				print "Search for indices at $url with \n\t$request_data\n    found\n\t".implode(', ', $this->index_cache[$from.'-'.$to])."\n";
-			}
-		}
-		return $this->index_cache[$from.'-'.$to];
 	}
 
 	/**
