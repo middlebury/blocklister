@@ -119,8 +119,8 @@ class ElasticsearchSignature implements Signature {
 
 		$request = [
 			"query" => [
-				"filtered" => [
-					"query" => [
+				"bool" => [
+					"must" => [
 						"query_string" => [
 							"query" => $this->query,
 						],
@@ -133,8 +133,7 @@ class ElasticsearchSignature implements Signature {
 										"@timestamp" => [
 											"from" => $from * 1000,
 											"to" => $to * 1000,
-										],
-										"_name" => "window",
+										]
 									],
 								],
 							],
