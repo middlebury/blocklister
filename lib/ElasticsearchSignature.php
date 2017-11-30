@@ -117,33 +117,33 @@ class ElasticsearchSignature implements Signature {
 		$to = time();
 		$from = $to - $this->window;
 
-		$request = array(
-			"query" => array(
-				"filtered" => array(
-					"query" => array(
-						"query_string" => array(
+		$request = [
+			"query" => [
+				"filtered" => [
+					"query" => [
+						"query_string" => [
 							"query" => $this->query,
-						),
-					),
-					"filter" => array(
-						"bool" => array(
-							"must" => array(
-								array(
-									"range" => array(
-										"@timestamp" => array(
+						],
+					],
+					"filter" => [
+						"bool" => [
+							"must" => [
+								[
+									"range" => [
+										"@timestamp" => [
 											"from" => $from * 1000,
 											"to" => $to * 1000,
-										),
+										],
 										"_name" => "window",
-									),
-								),
-							),
-						),
-					),
-				),
-			),
+									],
+								],
+							],
+						],
+					]
+				],
+			],
 			"size" => 10000,  // Hard-coding to 10,000 results. This is ElasticSearch's max.
-		);
+		];
 
 		if ($this->verbose) {
 			$this->elasticsearch->setVerbose(TRUE);
