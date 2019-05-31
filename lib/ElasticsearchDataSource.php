@@ -6,6 +6,9 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
  */
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Request;
+
 /**
  * A data source for searching Elasticsearch indexes.
  *
@@ -20,7 +23,7 @@ class ElasticsearchDataSource {
 	protected $index_base;
 	protected $verbose = FALSE;
 	protected $index_cache = array();
-	protected $http_auth = NULL;
+	protected $http_auth = [];
 
 	/**
 	 * Constructor
@@ -39,11 +42,8 @@ class ElasticsearchDataSource {
 		$this->base_url = $base_url;
 		$this->index_base = $index_base;
 
-		if (!is_null($username)) {
-			$this->http_auth = $username;
-		}
-		if (!is_null($password)) {
-			 $this->http_auth .= ':'.$password;
+		if (!is_null($username) || !is_null($password)) {
+			$this->http_auth = [$username, $password, 'basic'];
 		}
 	}
 
@@ -99,46 +99,28 @@ class ElasticsearchDataSource {
 		return $indices;
 	}
 
-	protected function post($url, $request_data){
-		$options = array(
-			'connecttimeout' => 10,
+	protected function post($url, $request_data) {
+		$options = [
+			'connect_timeout' => 10,
 			'timeout' => 30,
-		);
+		];
 		if (!empty($this->http_auth)) {
-			$options['httpauth'] = $this->http_auth;
-			$options['httpauthtype'] = \http\Client\Curl\AUTH_BASIC;
+			$options['auth'] = $this->http_auth;
 		}
+		$client = new Client($options);
 
-		$request = new \http\Client\Request('POST', $url);
-		$request->setOptions ($options);
-		$request->setHeaders(array(
+		$headers = [
 			'User-agent' => 'Blacklister',
 			'Content-Type' => 'text/json',
-		));
-		$request->getBody()->append($request_data);
+		];
+		$request = new Request('POST', $url, $headers, $request_data);
+		$response = $client->send($request);
 
-		$client = (new \http\Client())
-			->enqueue($request)
-			->send();
-		$response = $client->getResponse($request);
-
-		$info = $response->getTransferInfo();
-		if (!empty($info->error)) {
-			var_dump($info);
-			$error = $info->error;
-			$error .= ' total_time='.$info->total_time;
-			$error .= ' namelookup_time='.$info->namelookup_time;
-			$error .= ' connect_time='.$info->connect_time;
-			$error .= ' pretransfer_time='.$info->pretransfer_time;
-			$error .= ' num_connects='.$info->num_connects;
-			$error .= ' os_errno='.$info->os_errno;
-			throw new Exception('HTTP POST to '.$url.' failed. '.$error);
-		}
-		$result = json_decode($response->getBody());
+		$result = json_decode($response->getBody()->getContents());
 		if ($this->verbose) {
 			print "Searching $url for \n\t$request_data\n";
 		}
-		if (!empty($result->error) || $info->response_code != 200) {
+		if (!empty($result->error) || $response->getStatusCode() != 200) {
 			if (!empty($result->error))
 				if (is_object($result->error)) {
 					$message = $result->error->type.": ".$result->error->reason;
@@ -161,7 +143,7 @@ class ElasticsearchDataSource {
 				}
 			else
 				$message = '';
-			throw new Exception('Search to '.$info->effective_url.' failed with response_code '.$info->response_code.'. '.$message);
+			throw new Exception('Search to '.$url.' failed with response_code '.$response->getStatusCode().'. '.$message);
 		}
 		return $result;
 	}

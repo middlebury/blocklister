@@ -34,10 +34,9 @@ Environment
 
  * cron
 
- * PHP 5.3+  with...
+ * PHP 7.1+  with...
 
-   * `PECL HTTP` 2.0+
-     https://pecl.php.net/package/pecl_http
+   * [Composer](https://getcomposer.org/download/) to install dependencies.
 
    * `PDO_SQLITE` or `PDO_MYSQL` (for working database storage).  
      http://us.php.net/manual/en/ref.pdo-sqlite.php  
@@ -50,10 +49,20 @@ Installation process
 
  1. Put the directory containing this README and the scripts (including the `lib/` and
     `data/` directories) somewhere on your machine.
+    ```git clone https://github.com/middlebury/blacklister.git```
 
- 2. Copy `config.php.example` to `config.php`.
+ 2. If you do not have Composer installed globally on your machine, you can prepare
+    a local install [as described here](https://getcomposer.org/download/).
 
- 3. Edit `config.php` to choose your database (it defaults to using a Sqlite file stored
+ 3. Install the dependencies in `vendor/` by
+    ```
+    cd blacklister
+    php composer.phar install
+    ```
+
+ 4. Copy `config.php.example` to `config.php`.
+
+ 5. Edit `config.php` to choose your database (it defaults to using a Sqlite file stored
     at `data/blacklist.sq3`) and configure where your Elasticsearch datasource lives
     and what behavior signatures it should match.
 

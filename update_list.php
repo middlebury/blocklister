@@ -11,6 +11,7 @@ try {
 	spl_autoload_register(function ($class) {
 		include dirname(__FILE__).'/lib/'.$class.'.php';
 	});
+	require_once(dirname(__FILE__).'/vendor/autoload.php');
 
 	require_once(dirname(__FILE__).'/lib/ArgumentParser.php');
 
