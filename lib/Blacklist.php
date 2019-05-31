@@ -6,6 +6,8 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
  */
 
+use Symfony\Component\HttpFoundation\IpUtils;
+
 /**
  * A controller class for the blacklist system. Handles loading of signature matches and
  * apply of updates to the destination database.
@@ -19,6 +21,7 @@ class Blacklist {
 
 	protected $destDB;
 	protected $whitelistPatterns = array();
+	protected $whitelistCidr = array();
 	protected $signatures = array();
 	protected $verbose = FALSE;
 	protected $alertThreshold = 0;
@@ -72,6 +75,21 @@ CREATE TABLE IF NOT EXISTS blacklist (
 		if ($res === FALSE)
 			throw new InvalidArgumentException('Invalid regex supplied to addWhitelistPattern(): '.$regex, 1);
 		$this->whitelistPatterns[] = $regex;
+	}
+
+	/**
+	 * Add a CIDR range expression to match IP ranges that should never be blacklisted.
+	 *
+	 * @param string $cidr
+	 * @return null
+	 */
+	public function addWhitelistCidr ($cidr) {
+		// Source: http://blog.markhatton.co.uk/2011/03/15/regular-expressions-for-ip-addresses-cidr-ranges-and-hostnames/
+		$cidrIpV4 = '/^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$/';
+		$cidrIpV6 = '/^s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:)))(%.+)?s*(\/(12[0-8]|1[0-1][0-9]|[1-9][0-9]|[0-9]))$/';
+		if (!preg_match($cidrIpV4, $cidr) && !preg_match($cidrIpV6, $cidr))
+			throw new InvalidArgumentException('Invalid CIDR supplied to addWhitelistCidr(): '.$cidr, 1);
+		$this->whitelistCidr[] = $cidr;
 	}
 
 	/**
@@ -300,6 +318,14 @@ CREATE TABLE IF NOT EXISTS blacklist (
 				if (preg_match($pattern, $ip)) {
 					$whitelisted = TRUE;
 					break;
+				}
+			}
+			if (!$whitelisted) {
+				foreach ($this->whitelistCidr as $cidr) {
+					if (IpUtils::checkIp($ip, $cidr)) {
+						$whitelisted = TRUE;
+						break;
+					}
 				}
 			}
 			if ($whitelisted) {

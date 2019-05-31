@@ -23,7 +23,14 @@ $blacklist->setBlacklistDatabase(new PDO('sqlite:'.dirname(__FILE__).'/data/blac
  *********************************************************/
 $blacklist->addWhitelistPattern('/^140\.233\./');
 $blacklist->addWhitelistPattern('/^172\.16\./');
-
+// Automatic IPs for Jetpack.
+$blacklist->addWhitelistCidr('76.74.255.0/25');
+$blacklist->addWhitelistCidr('76.74.248.128/25');
+$blacklist->addWhitelistCidr('198.181.116.0/22');
+$blacklist->addWhitelistCidr('192.0.64.0/18');
+$blacklist->addWhitelistCidr('64.34.206.0/24');
+$blacklist->addWhitelistCidr('66.155.105.128/26');
+$blacklist->addWhitelistCidr('69.90.253.0/24');
 
 /*********************************************************
  * Add a static list of IP addresses that will be included
