@@ -111,7 +111,7 @@ class ElasticsearchDataSource {
 
 		$headers = [
 			'User-agent' => 'Blacklister',
-			'Content-Type' => 'text/json',
+			'Content-Type' => 'application/json',
 		];
 		$request = new Request('POST', $url, $headers, $request_data);
 		$response = $client->send($request);
