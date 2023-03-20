@@ -1,6 +1,6 @@
 <?php
 /**
- * @package blacklister
+ * @package blocklister
  *
  * @copyright Copyright &copy; 2014, Middlebury College
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
@@ -9,15 +9,15 @@
 use Symfony\Component\HttpFoundation\IpUtils;
 
 /**
- * A controller class for the blacklist system. Handles loading of signature matches and
+ * A controller class for the blocklist system. Handles loading of signature matches and
  * apply of updates to the destination database.
  *
- * @package blacklister
+ * @package blocklister
  *
  * @copyright Copyright &copy; 2014, Middlebury College
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
  */
-class Blacklist {
+class Blocklist {
 
 	protected $destDB;
 	protected $whitelistPatterns = array();
@@ -44,16 +44,16 @@ class Blacklist {
 	 * @param PDO $destDB
 	 * @return null
 	 */
-	public function setBlacklistDatabase (PDO $destDB) {
+	public function setBlocklistDatabase (PDO $destDB) {
 		$this->destDB = $destDB;
 		$this->destDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 		// Test if the table exists.
 		try {
-			$this->destDB->query('SELECT * FROM blacklist');
+			$this->destDB->query('SELECT * FROM blocklist');
 		} catch (PDOException $e) {
 			$query = "
-CREATE TABLE IF NOT EXISTS blacklist (
+CREATE TABLE IF NOT EXISTS blocklist (
   time_added bigint(20) NOT NULL,
   ttl int(11) NOT NULL DEFAULT '60',
   ip varchar(15) NOT NULL,
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	}
 
 	/**
-	 * Add a regular expression to match IP ranges that should never be blacklisted.
+	 * Add a regular expression to match IP ranges that should never be blocklisted.
 	 *
 	 * @param string $regex
 	 * @return null
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	}
 
 	/**
-	 * Add a CIDR range expression to match IP ranges that should never be blacklisted.
+	 * Add a CIDR range expression to match IP ranges that should never be blocklisted.
 	 *
 	 * @param string $cidr
 	 * @return null
@@ -97,18 +97,18 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	 *
 	 * @param string $displayName
 	 * @param Signature $signature
-	 * @param mixed $blacklistTime
+	 * @param mixed $blocklistTime
 	 *		An integer number of seconds or times in the following format:
 	 *			'5m'  ...means 5 minutes
 	 *			'5h'  ...means 5 hours
 	 *			'5d'  ...means 5 days
 	 * @return null
 	 */
-	public function addSignature ($displayName, Signature $signature, $blacklistTime = '1h') {
+	public function addSignature ($displayName, Signature $signature, $blocklistTime = '1h') {
 		$this->signatures[] = array(
 			'displayName' => $displayName,
 			'signature' => $signature,
-			'blacklistTime' => self::getSecondsFromTime($blacklistTime),
+			'blocklistTime' => self::getSecondsFromTime($blocklistTime),
 		);
 		if ($this->verbose)
 			$signature->setVerbose(TRUE);
@@ -155,79 +155,79 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	}
 
 	/**
-	 * Update the blacklist from signature matches.
+	 * Update the blocklist from signature matches.
 	 *
 	 * @return null
 	 */
 	public function update () {
-		// Remove expired entries from the blacklist.
+		// Remove expired entries from the blocklist.
 		$this->_removeExpired();
 
-		$blacklist = array(); // Array of [IP => blacklist time].
+		$blocklist = array(); // Array of [IP => blocklist time].
 
 		foreach ($this->signatures as $signatureArray) {
 			$displayName = $signatureArray['displayName'];
 			$signature = $signatureArray['signature'];
-			$blacklistTime = $signatureArray['blacklistTime'];
+			$blocklistTime = $signatureArray['blocklistTime'];
 			$ips = $this->_filterWhitelistedIPs($signature->getMatchingIPs(), $displayName);
 			foreach ($ips as $ip) {
 				echo "Client [".$ip."] matched signature [".$displayName."]\n";
-				// IPs might match multiple signatures, so add IPs to the blacklist with
+				// IPs might match multiple signatures, so add IPs to the blocklist with
 				// the largest time matched.
-				if (!isset($blacklist[$ip])) {
-					$blacklist[$ip] = array(
-						'blacklistTime' => $blacklistTime,
+				if (!isset($blocklist[$ip])) {
+					$blocklist[$ip] = array(
+						'blocklistTime' => $blocklistTime,
 						'signature' => $displayName,
 						'matched_signatures' => array($displayName),
 					);
 				} else {
 					// Add our signature to the list of all matched.
-					$blacklist[$ip]['matched_signatures'][] = $displayName;
+					$blocklist[$ip]['matched_signatures'][] = $displayName;
 
 					// Replace the primary signature if this one has a longer block-time
-					if ($blacklistTime > $blacklist[$ip]['blacklistTime']) {
-						$blacklist[$ip]['blacklistTime'] = $blacklistTime;
-						$blacklist[$ip]['signature'] = $displayName;
+					if ($blocklistTime > $blocklist[$ip]['blocklistTime']) {
+						$blocklist[$ip]['blocklistTime'] = $blocklistTime;
+						$blocklist[$ip]['signature'] = $displayName;
 					}
 				}
 			}
 		}
 
 		$now = time();
-		$insert = $this->destDB->prepare('INSERT INTO blacklist (time_added, ttl, ip, signature) VALUES (:time_added, :ttl, :ip, :signature)');
-		$select = $this->destDB->prepare('SELECT ip FROM blacklist WHERE ip = :ip');
-		foreach ($blacklist as $ip => $info) {
+		$insert = $this->destDB->prepare('INSERT INTO blocklist (time_added, ttl, ip, signature) VALUES (:time_added, :ttl, :ip, :signature)');
+		$select = $this->destDB->prepare('SELECT ip FROM blocklist WHERE ip = :ip');
+		foreach ($blocklist as $ip => $info) {
 			$select->execute(array(':ip' => $ip));
 			$existing = $select->fetchAll(PDO::FETCH_COLUMN);
 			if (empty($existing)) {
 				$insert->execute(array(
 					':time_added' => $now,
-					':ttl' => $info['blacklistTime'],
+					':ttl' => $info['blocklistTime'],
 					':ip' => $ip,
 					':signature' => $info['signature'],
 				));
-				echo "Client [".$ip."] added to blacklist for ".$this->_formatTime($info['blacklistTime'])." for matching signature [".$info['signature']."]\n";
+				echo "Client [".$ip."] added to blocklist for ".$this->_formatTime($info['blocklistTime'])." for matching signature [".$info['signature']."]\n";
 			}
 		}
 
 		// Send alerts if needed.
-		if ($this->alertThreshold > 0 && count($blacklist) >= $this->alertThreshold) {
+		if ($this->alertThreshold > 0 && count($blocklist) >= $this->alertThreshold) {
 			if (!count($this->alertEmails))
 				print "Error: Alert threshold set to ".$this->alertThreshold.", but no alert email addresses are defined.\n";
 
 			$hostname = gethostname();
-			$subject = "Blacklister alert from ".$hostname.": ".$this->alertThreshold."+ clients matched.";
+			$subject = "Blocklister alert from ".$hostname.": ".$this->alertThreshold."+ clients matched.";
 			ob_start();
 			print "<html>\n";
 			print "\t<head>\n";
 			print "\t\t<title>".$subject."</title>\n";
 			print "\t</head>\n";
 			print "\t<body>\n";
-			print "\t\t<p>From Blacklister on ".$hostname.":</p>\n";
-			print "\t\t<p>".count($blacklist)." client IPs were matched in this run, exceeding the threshold of ".$this->alertThreshold.".</p>\n\n";
+			print "\t\t<p>From Blocklister on ".$hostname.":</p>\n";
+			print "\t\t<p>".count($blocklist)." client IPs were matched in this run, exceeding the threshold of ".$this->alertThreshold.".</p>\n\n";
 			print "\t\t<p>Matched clients:</p>\n";
 			print "\t\t<pre style=\"font-family:courier new,monospace\">";
-			foreach ($blacklist as $ip => $info) {
+			foreach ($blocklist as $ip => $info) {
 				print "\t".$ip."\tmatched\t[".implode('], [', $info['matched_signatures'])."]\n";
 			}
 			print "</pre>\n";
@@ -240,7 +240,7 @@ CREATE TABLE IF NOT EXISTS blacklist (
 					$processUser = posix_getpwuid(posix_geteuid());
 					$this->alertFromEmail = $processUser['name'].'@'.gethostname();
 				} else {
-					print "Error: POSIX functions posix_getpwuid() and/or posix_geteuid() are not available. Please add POSIX support to PHP http://us3.php.net/manual/en/book.posix.php or use $blacklister->setAlertFromEmailAddress() to set the alert From address.";
+					print "Error: POSIX functions posix_getpwuid() and/or posix_geteuid() are not available. Please add POSIX support to PHP http://us3.php.net/manual/en/book.posix.php or use $blocklister->setAlertFromEmailAddress() to set the alert From address.";
 				}
 			}
 			$additional_headers = array(
@@ -254,12 +254,12 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	}
 
 	/**
-	 * Answer the blacklisted IPs
+	 * Answer the blocklisted IPs
 	 *
 	 * @return array
 	 */
 	public function getList () {
-		$select = $this->destDB->prepare('SELECT ip FROM blacklist WHERE time_added + ttl > :now');
+		$select = $this->destDB->prepare('SELECT ip FROM blocklist WHERE time_added + ttl > :now');
 		$select->bindValue(':now', time(), PDO::PARAM_INT);
 		$select->execute();
 		return $select->fetchAll(PDO::FETCH_COLUMN);
@@ -284,21 +284,21 @@ CREATE TABLE IF NOT EXISTS blacklist (
 	}
 
 	/**
-	 * Removed expired entries from the blacklist.
+	 * Removed expired entries from the blocklist.
 	 *
 	 * @return null
 	 */
 	protected function _removeExpired () {
 		$now = time();
 
-		$select = $this->destDB->prepare('SELECT * FROM blacklist WHERE time_added + ttl < :now');
+		$select = $this->destDB->prepare('SELECT * FROM blocklist WHERE time_added + ttl < :now');
 		$select->bindValue(':now', $now, PDO::PARAM_INT);
 		$select->execute();
 		foreach ($select->fetchAll(PDO::FETCH_OBJ) as $row) {
-			echo "Client [".$row->ip."] removed from blacklist after ".$this->_formatTime($now - $row->time_added)." for matching signature [".$row->signature."]\n";
+			echo "Client [".$row->ip."] removed from blocklist after ".$this->_formatTime($now - $row->time_added)." for matching signature [".$row->signature."]\n";
 		}
 
-		$delete = $this->destDB->prepare('DELETE FROM blacklist WHERE time_added + ttl < :now');
+		$delete = $this->destDB->prepare('DELETE FROM blocklist WHERE time_added + ttl < :now');
 		$delete->bindValue(':now', $now, PDO::PARAM_INT);
 		$delete->execute();
 	}

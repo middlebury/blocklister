@@ -1,36 +1,36 @@
 <?php
 /**
- * Blacklister configuration. Used by both update_list.php and get_list.php
+ * Blocklister configuration. Used by both update_list.php and get_list.php
  *
- * @package blacklister
+ * @package blocklister
  *
  * @copyright Copyright &copy; 2014, Middlebury College
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
  */
 
 /*********************************************************
- * Blacklist database
+ * Blocklist database
  *********************************************************/
-$blacklist->setBlacklistDatabase(new PDO('sqlite:'.dirname(__FILE__).'/data/blacklist.sq3'));
-# $blacklist->setBlacklistDatabase(new PDO('mysql:host=127.0.0.1;dbname=afranco_blacklist', 'testuser', 'testpassword'));
+$blocklist->setBlocklistDatabase(new PDO('sqlite:'.dirname(__FILE__).'/data/blocklist.sq3'));
+# $blocklist->setBlocklistDatabase(new PDO('mysql:host=127.0.0.1;dbname=afranco_blocklist', 'testuser', 'testpassword'));
 
 
 /*********************************************************
  * Add a regular expressions that will match IP ranges
- * that we should never add to the blacklist.
- * This will prevent accidentally blacklisting certain
+ * that we should never add to the blocklist.
+ * This will prevent accidentally blocklisting certain
  * clients that are trusted.
  *********************************************************/
-$blacklist->addWhitelistPattern('/^140\.233\./');
-$blacklist->addWhitelistPattern('/^172\.16\./');
+$blocklist->addWhitelistPattern('/^140\.233\./');
+$blocklist->addWhitelistPattern('/^172\.16\./');
 // Automatic IPs for Jetpack.
-$blacklist->addWhitelistCidr('76.74.255.0/25');
-$blacklist->addWhitelistCidr('76.74.248.128/25');
-$blacklist->addWhitelistCidr('198.181.116.0/22');
-$blacklist->addWhitelistCidr('192.0.64.0/18');
-$blacklist->addWhitelistCidr('64.34.206.0/24');
-$blacklist->addWhitelistCidr('66.155.105.128/26');
-$blacklist->addWhitelistCidr('69.90.253.0/24');
+$blocklist->addWhitelistCidr('76.74.255.0/25');
+$blocklist->addWhitelistCidr('76.74.248.128/25');
+$blocklist->addWhitelistCidr('198.181.116.0/22');
+$blocklist->addWhitelistCidr('192.0.64.0/18');
+$blocklist->addWhitelistCidr('64.34.206.0/24');
+$blocklist->addWhitelistCidr('66.155.105.128/26');
+$blocklist->addWhitelistCidr('69.90.253.0/24');
 
 /*********************************************************
  * Add a static list of IP addresses that will be included
@@ -56,19 +56,19 @@ $web_es = new ElasticsearchDataSource('http://logs.example.com:9200/', 'logstash
  * an email alert will be sent to administrators (listed)
  * to notify them.
  *
- *    $blacklist->setAlertThreshold(20);
- *    $blacklist->addAlertEmailAddress('admin@example.edu');
+ *    $blocklist->setAlertThreshold(20);
+ *    $blocklist->addAlertEmailAddress('admin@example.edu');
  *
  * You can also set the From address if you need to have it
  * properly match a valid address. By default it uses the
  * username executing the script at the current hostname.
  *
- *    $blacklist->setAlertFromEmailAddress('user@example.edu');
+ *    $blocklist->setAlertFromEmailAddress('user@example.edu');
  *
  *********************************************************/
-#$blacklist->setAlertThreshold(20);
-#$blacklist->addAlertEmailAddress('admin@example.edu');
-#$blacklist->addAlertEmailAddress('admin2@example.edu');
+#$blocklist->setAlertThreshold(20);
+#$blocklist->addAlertEmailAddress('admin@example.edu');
+#$blocklist->addAlertEmailAddress('admin2@example.edu');
 
 
 /*********************************************************
@@ -86,7 +86,7 @@ $signature->setQuery("cluster:drupal AND type:varnishncsa AND verb:post AND resp
 $signature->setWindow('5m');
 $signature->setThreshold(15);
 $signature->setIPField('orig_clientip');
-$blacklist->addSignature('POST with 403', $signature, '12h');
+$blocklist->addSignature('POST with 403', $signature, '12h');
 
 // Match form submissions that include a honeypot field.
 //
@@ -97,7 +97,7 @@ $signature->setQuery("cluster:drupal AND type:drupal_watchdog AND drupal_action:
 $signature->setWindow('5m');
 $signature->setThreshold(2);
 $signature->setIPField('orig_clientip');
-$blacklist->addSignature('form honeypot', $signature, '6h');
+$blocklist->addSignature('form honeypot', $signature, '6h');
 
 // Match form submissions that do not have javascript enabled.
 //
@@ -109,4 +109,4 @@ $signature->setQuery("cluster:drupal AND type:drupal_watchdog AND drupal_action:
 $signature->setWindow('5m');
 $signature->setThreshold(10);
 $signature->setIPField('orig_clientip');
-$blacklist->addSignature('form missing js', $signature, '1h');
+$blocklist->addSignature('form missing js', $signature, '1h');

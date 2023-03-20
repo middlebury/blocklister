@@ -1,15 +1,15 @@
 <?php
 /**
- * @package blacklister
+ * @package blocklister
  *
  * @copyright Copyright &copy; 2014, Middlebury College
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
  */
 
 /**
- * Interface for definition of activity signatures that will be identified for blacklisting.
+ * Interface for definition of activity signatures that will be identified for blocklisting.
  *
- * @package blacklister
+ * @package blocklister
  *
  * @copyright Copyright &copy; 2014, Middlebury College
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
@@ -72,7 +72,7 @@ class ElasticsearchSignature implements Signature {
 	 * @return null
 	 */
 	public function setWindow ($window) {
-		$this->window = Blacklist::getSecondsFromTime($window);
+		$this->window = Blocklist::getSecondsFromTime($window);
 	}
 
 	/**

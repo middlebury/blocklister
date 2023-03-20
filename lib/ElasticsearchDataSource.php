@@ -1,6 +1,6 @@
 <?php
 /**
- * @package blacklister
+ * @package blocklister
  *
  * @copyright Copyright &copy; 2014, Middlebury College
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
@@ -12,7 +12,7 @@ use GuzzleHttp\Psr7\Request;
 /**
  * A data source for searching Elasticsearch indexes.
  *
- * @package blacklister
+ * @package blocklister
  *
  * @copyright Copyright &copy; 2014, Middlebury College
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
@@ -110,7 +110,7 @@ class ElasticsearchDataSource {
 		$client = new Client($options);
 
 		$headers = [
-			'User-agent' => 'Blacklister',
+			'User-agent' => 'Blocklister',
 			'Content-Type' => 'application/json',
 		];
 		$request = new Request('POST', $url, $headers, $request_data);

@@ -1,11 +1,11 @@
 #!/bin/bash
 
 ##############################################################################
-# This script will updated the blacklist from source data and write a static
+# This script will updated the blocklist from source data and write a static
 # text file to the path of your choosing
 #
 # Example usage:
-#       blacklist_cron.sh -o /var/www/html/blacklist.txt | logger -t blacklister -p local0.info
+#       blocklist_cron.sh -o /var/www/html/blocklist.txt | logger -t blocklister -p local0.info
 #
 # Author: Adam Franco
 # Date: 2014-04-11

@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 /**
- * @package blacklister
+ * @package blocklister
  *
  * @copyright Copyright &copy; 2014, Middlebury College
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
@@ -31,15 +31,15 @@ try {
 	else
 		$verbose = FALSE;
 
-	$blacklist = new Blacklist($verbose);
+	$blocklist = new Blocklist($verbose);
 
 	if (!file_exists(dirname(__FILE__).'/config.php'))
 		throw new Exception('To complete installation, please copy config.php.example to config.php and edit it to match your environment.', 4);
 
 	require_once(dirname(__FILE__).'/config.php');
 
-	// Update the blacklist based on matches to the signatures
-	$blacklist->update();
+	// Update the blocklist based on matches to the signatures
+	$blocklist->update();
 	exit(0);
 } catch (Exception $e) {
 	print 'Error: '.$e->getMessage()."\n";

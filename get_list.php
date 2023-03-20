@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 /**
- * @package blacklister
+ * @package blocklister
  *
  * @copyright Copyright &copy; 2014, Middlebury College
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License (GPL)
@@ -13,20 +13,20 @@ try {
 	});
 	require_once(dirname(__FILE__).'/vendor/autoload.php');
 
-	$blacklist = new Blacklist();
+	$blocklist = new Blocklist();
 
 	if (!file_exists(dirname(__FILE__).'/config.php'))
 		throw new Exception('To complete installation, please copy config.php.example to config.php and edit it to match your environment.', 4);
 
 	require_once(dirname(__FILE__).'/config.php');
 
-	// Update the blacklist based on matches to the signatures
+	// Update the blocklist based on matches to the signatures
 	@header('Content-Type: text/plain');
 	if (!empty($static_list_members) && is_array($static_list_members)) {
 		print implode("\n", $static_list_members);
 		print "\n";
 	}
-	$ips = $blacklist->getList();
+	$ips = $blocklist->getList();
 	foreach ($ips as $ip) {
 		print $ip."/32\n";
 	}

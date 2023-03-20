@@ -1,4 +1,8 @@
 {
+    "name": "middlebury/blocklister",
+    "description": "A small program that looks at data in data sources (such as Elasticsearch) and can generate an IP blocklist suitable for ingestion into a firewall, such as the Dynamic Block List (DBL) supported by Palo Alto Networks' PAN-OS 5.0.",
+    "type": "project",
+    "license": "GPL-3.0-or-later",
     "require": {
         "guzzlehttp/guzzle": "^6.3",
         "symfony/http-foundation": "^4.3"
